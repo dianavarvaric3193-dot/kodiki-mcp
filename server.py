@@ -149,4 +149,6 @@ async def s20_get_lead_statuses(params: StatusInput) -> str:
 
 
 if __name__ == "__main__":
-    mcp.run(transport="streamable_http", port=PORT)
+    import uvicorn
+    app = mcp.get_asgi_app()
+    uvicorn.run(app, host="0.0.0.0", port=PORT)

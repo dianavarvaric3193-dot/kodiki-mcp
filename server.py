@@ -7,6 +7,9 @@ from datetime import datetime, timedelta
 from typing import Optional
 from pydantic import BaseModel, Field
 from mcp.server.fastmcp import FastMCP
+from starlette.applications import Starlette
+from starlette.responses import JSONResponse
+from starlette.routing import Route, Mount
 
 S20_HOSTNAME = os.environ.get("S20_HOSTNAME", "kodiki.s20.online")
 S20_EMAIL    = os.environ.get("S20_EMAIL", "")
@@ -129,7 +132,26 @@ async def s20_get_lead_statuses(params: StatusInput) -> str:
         return "\n".join([f"ID:{s.get('id')} — {s.get('name','—')}" for s in items])
     except Exception as e:
         return f"Ошибка: {e}"
+async def oauth_metadata(request):
+    return JSONResponse({
+        "issuer": str(request.base_url),
+        "response_types_supported": ["code"],
+    })
 
+async def homepage(request):
+    return JSONResponse({"status": "ok", "service": "kodiki_mcp"})
+
+mcp_app = mcp.streamable_http_app()
+
+app = Starlette(routes=[
+    Route("/", homepage),
+    Route("/.well-known/oauth-authorization-server", oauth_metadata),
+    Mount("/mcp", app=mcp_app),
+])
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=PORT)
 
 if __name__ == "__main__":
     import uvicorn

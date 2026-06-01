@@ -168,6 +168,17 @@ async def oauth_token(request: Request):
     })
 
 
+async def oauth_register(request: Request):
+    return JSONResponse({
+        "client_id": "kodiki_client",
+        "client_secret": "kodiki_secret",
+        "redirect_uris": [],
+        "grant_types": ["authorization_code"],
+        "response_types": ["code"],
+        "token_endpoint_auth_method": "client_secret_post",
+    })
+
+
 async def homepage(request: Request):
     return JSONResponse({"status": "ok", "service": "kodiki_mcp"})
 
@@ -181,6 +192,7 @@ app = Starlette(routes=[
     Route("/.well-known/openid-configuration", oauth_metadata),
     Route("/oauth/authorize", oauth_authorize),
     Route("/oauth/token", oauth_token, methods=["POST"]),
+    Route("/oauth/register", oauth_register, methods=["POST"]),
     Mount("/mcp", app=mcp_app),
 ])
 

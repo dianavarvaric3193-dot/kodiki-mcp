@@ -2,19 +2,21 @@
 MCP-сервер для Кодики/Фоксики — S20 CRM
 """
 import os
+import json
 import httpx
 from datetime import datetime, timedelta
 from typing import Optional
 from pydantic import BaseModel, Field
 from mcp.server.fastmcp import FastMCP
 from starlette.applications import Starlette
-from starlette.responses import JSONResponse
+from starlette.responses import JSONResponse, Response
 from starlette.routing import Route, Mount
+from starlette.requests import Request
 
 S20_HOSTNAME = os.environ.get("S20_HOSTNAME", "kodiki.s20.online")
 S20_EMAIL    = os.environ.get("S20_EMAIL", "")
 S20_API_KEY  = os.environ.get("S20_API_KEY", "")
-PORT = int(os.environ.get("PORT", 8080))
+PORT         = int(os.environ.get("PORT", 8080))
 S20_BASE     = f"https://{S20_HOSTNAME}/v2api"
 
 mcp = FastMCP("kodiki_mcp")
@@ -132,27 +134,56 @@ async def s20_get_lead_statuses(params: StatusInput) -> str:
         return "\n".join([f"ID:{s.get('id')} — {s.get('name','—')}" for s in items])
     except Exception as e:
         return f"Ошибка: {e}"
-async def oauth_metadata(request):
+
+
+# OAuth endpoints — нужны для подключения к Claude
+async def oauth_metadata(request: Request):
+    base = str(request.base_url).rstrip("/")
     return JSONResponse({
-        "issuer": str(request.base_url),
+        "issuer": base,
+        "authorization_endpoint": f"{base}/oauth/authorize",
+        "token_endpoint": f"{base}/oauth/token",
         "response_types_supported": ["code"],
+        "grant_types_supported": ["authorization_code"],
+        "code_challenge_methods_supported": ["S256"],
     })
 
-async def homepage(request):
+
+async def oauth_authorize(request: Request):
+    params = dict(request.query_params)
+    redirect_uri = params.get("redirect_uri", "")
+    state = params.get("state", "")
+    code = "kodiki_auth_code"
+    return Response(
+        status_code=302,
+        headers={"location": f"{redirect_uri}?code={code}&state={state}"}
+    )
+
+
+async def oauth_token(request: Request):
+    return JSONResponse({
+        "access_token": "kodiki_token",
+        "token_type": "bearer",
+        "expires_in": 86400,
+    })
+
+
+async def homepage(request: Request):
     return JSONResponse({"status": "ok", "service": "kodiki_mcp"})
 
+
+# Собираем приложение
 mcp_app = mcp.streamable_http_app()
 
 app = Starlette(routes=[
     Route("/", homepage),
     Route("/.well-known/oauth-authorization-server", oauth_metadata),
+    Route("/.well-known/openid-configuration", oauth_metadata),
+    Route("/oauth/authorize", oauth_authorize),
+    Route("/oauth/token", oauth_token, methods=["POST"]),
     Mount("/mcp", app=mcp_app),
 ])
 
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=PORT)
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(mcp.streamable_http_app(), host="0.0.0.0", port=PORT)

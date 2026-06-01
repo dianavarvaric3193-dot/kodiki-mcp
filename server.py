@@ -11,7 +11,7 @@ from mcp.server.fastmcp import FastMCP
 S20_HOSTNAME = os.environ.get("S20_HOSTNAME", "kodiki.s20.online")
 S20_EMAIL    = os.environ.get("S20_EMAIL", "")
 S20_API_KEY  = os.environ.get("S20_API_KEY", "")
-PORT         = int(os.environ.get("PORT", 8080))
+PORT = int(os.environ.get("PORT", 8080))
 S20_BASE     = f"https://{S20_HOSTNAME}/v2api"
 
 mcp = FastMCP("kodiki_mcp")
@@ -132,4 +132,5 @@ async def s20_get_lead_statuses(params: StatusInput) -> str:
 
 
 if __name__ == "__main__":
-    mcp.run()
+    import uvicorn
+    uvicorn.run(mcp.streamable_http_app(), host="0.0.0.0", port=PORT)

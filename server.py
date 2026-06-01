@@ -161,10 +161,16 @@ async def oauth_authorize(request: Request):
 
 
 async def oauth_token(request: Request):
+    body = {}
+    try:
+        body = await request.json()
+    except:
+        pass
     return JSONResponse({
-        "access_token": "kodiki_token",
+        "access_token": "kodiki_client",
         "token_type": "bearer",
         "expires_in": 86400,
+        "scope": "mcp",
     })
 
 

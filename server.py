@@ -46,7 +46,7 @@ class LeadsInput(BaseModel):
     page: int = Field(0, description="Страница")
 
 
-@mcp.tool(name="s20_get_leads", annotations={"readOnlyHint": True})
+@mcp.tool(name="s20_get_leads")
 async def s20_get_leads(params: LeadsInput) -> str:
     """Возвращает список лидов из S20 CRM за период."""
     date_from = params.date_from or (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
@@ -79,7 +79,7 @@ class FunnelInput(BaseModel):
     date_to: Optional[str] = Field(None, description="Дата до")
 
 
-@mcp.tool(name="s20_funnel_by_manager", annotations={"readOnlyHint": True})
+@mcp.tool(name="s20_funnel_by_manager")
 async def s20_funnel_by_manager(params: FunnelInput) -> str:
     """Анализирует конверсию лидов по каждому менеджеру."""
     date_from = params.date_from or (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
@@ -118,7 +118,7 @@ class StatusInput(BaseModel):
     branch_id: int = Field(1, description="ID филиала")
 
 
-@mcp.tool(name="s20_get_lead_statuses", annotations={"readOnlyHint": True})
+@mcp.tool(name="s20_get_lead_statuses")
 async def s20_get_lead_statuses(params: StatusInput) -> str:
     """Возвращает список статусов лидов с их ID."""
     try:
